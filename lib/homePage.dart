@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:newmovies/MoviesDetail.dart';
 import 'package:newmovies/NewMovies.dart';
+import 'package:newmovies/InternetConnectivity.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -21,8 +21,16 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    fetchJson();
+    InternetConnectivity.checkConnectivity();
 
+/*    InternetConnectivity.subscription = new Connectivity().onConnectivityChanged.listen((result){
+      if(result == ConnectivityResult.none)
+        setState(() {
+          InternetConnectivity.internet = false;
+        });
+    });*/
+
+    if (InternetConnectivity.internet) fetchJson();
   }
 
   List<newMovies> newMoviesList;
@@ -40,7 +48,9 @@ class _HomePageState extends State<HomePage> {
         return new newMovies.fromJson(jsonresult);
       });
 
-      setState(() {needVPN = false;});
+      setState(() {
+        needVPN = false;
+      });
       print(newMoviesList.length);
       for (var i in newMoviesList) {
         print(
@@ -51,8 +61,6 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         needVPN = true;
       });
-
-
     }
     return newMoviesList;
   }
@@ -65,11 +73,6 @@ class _HomePageState extends State<HomePage> {
       home: new Scaffold(
           appBar: new AppBar(
             title: new Text("New Movies"),
-            actions: <Widget>[
-              new IconButton(icon: new Icon(Icons.search), onPressed: (){
-
-              })
-            ],
           ),
           body: newMoviesList != null
               ? new ListView.builder(
@@ -101,11 +104,15 @@ class _HomePageState extends State<HomePage> {
                       ),
                     );
                   })
-              : (!needVPN
-                  ? Center(child: new CircularProgressIndicator())
+              : InternetConnectivity.internet
+                  ? (!needVPN
+                      ? Center(child: new CircularProgressIndicator())
+                      : Center(
+                          child: Text("Please Enable VPN"),
+                        ))
                   : Center(
-                      child: Text("Please Enable VPN"),
-                    ))),
+                      child: Text("There is no internet connection."),
+                    )),
     );
   }
 }
